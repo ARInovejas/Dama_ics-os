@@ -2,12 +2,13 @@
 #include <strings.h>
 #include <stdlib.h>
 //constants
-#define row 8
-#define col 8
+#define rows 8
+#define cols 8
 #define b_square 'e'
 #define w_square ' '
 #define b_piece 'b'
 #define w_piece 'w'
+#define req_piece 'r'
 #define p_move 'p'
 #define p1 1
 #define p2 2
@@ -27,25 +28,25 @@
 //fxns
 void initializeBoard();
 void printMenu();
-void printBoard(char board[row][col]);
-void findReqMoves(char board[row][col]);
-void copyBoard(char dest[row][col], char src[row][col]);
-void findCursor(char dummy[row][col]);
+void printBoard(char board[rows][cols]);
+void findReqMoves(char board[rows][cols]);
+int checkCapture(char board[rows][cols], int row, int col, char opp_piece);
+void copyBoard(char dest[rows][cols], char src[rows][cols]);
+void findCursor(char dummy[rows][cols]);
 void findPossibleMoves();
 void executeMove(char keypress, int marked);
 void startGame();
 
 //global variables
-char board[row][col];
-char dummy1[row][col];
-char dummy2[row][col];
+char board[rows][cols];
+char dummy1[rows][cols];
+char dummy2[rows][cols];
 int mode;
 int move, next_turn;
 int win_flag = 0;
 int cur_row, cur_col;
 int marked_row, marked_col;
 int req_flag = 0;
-int req_row, req_col;
 
 int main()
 {
@@ -60,8 +61,8 @@ int main()
 void initializeBoard(){
 	int index = 0;
 	//creates the initial board
-	for(int i=0; i<row; i++){
-		for (int j=0; j<col; j++){
+	for(int i=0; i<rows; i++){
+		for (int j=0; j<cols; j++){
 			if(i<=2){
 				if(index%2 == 1) board[i][j] = b_piece;
 				else board[i][j] = w_square;	
@@ -80,27 +81,106 @@ void initializeBoard(){
 void printMenu(){
 	printf("[1] Standard Mode\n[2] Reversi Mode\n[q] Quit\n--:");
 }
-void printBoard(char board[row][col]){
+void printBoard(char board[rows][cols]){
 	printf("\n");
-	for (int i=0; i<row; i++){
-		for (int j=0; j<col; j++){
+	for (int i=0; i<rows; i++){
+		for (int j=0; j<cols; j++){
 			printf("%c ", board[i][j]);
 		}
 		printf("\n");
 	}
 	printf("Player %d: ", move);
 }
-void findReqMoves(char board[row][col]){
+void findReqMoves(char board[rows][cols]){
+	char piece, opp_piece;
+	if(move == p1) {
+		piece = w_piece;
+		opp_piece = b_piece;
+	}
+	else {
+		piece = b_piece;
+		opp_piece = w_piece;
+	}
+
+	req_flag = 0;
+	int captures = 0;
+	int max_captures = 1;
+	for(int i=0; i<rows; i++){
+		for(int j=0; j<cols; j++){
+			if(board[i][j] == piece){
+				captures = checkCapture(board, i, j, opp_piece);
+
+				if(captures > max_captures){ //resets all the r because there is a more priority move (more captures than the other)
+					
+					copyBoard(dummy1, board);
+					max_captures = captures;
+				}
+				if(captures == max_captures){
+					
+					dummy1[i][j] = req_piece;
+					req_flag = 1;
+					
+				}
+			}
+		}
+	}
 
 }
-void copyBoard(char dest[row][col], char src[row][col]){
-	for(int i=0; i<row; i++){
-		for(int j=0; j<col; j++){
+int checkCapture(char board[rows][cols], int row, int col, char opp_piece){ //recursive function that checks if there is/are capture/captures available for a piece.
+	int captureUL = 0, captureUR = 0, captureLR = 0, captureLL = 0, max = 0;
+	char UL[rows][cols], UR[rows][cols], LR[rows][cols], LL[rows][cols];
+	copyBoard(UL, board);
+	copyBoard(UR, board);
+	copyBoard(LR, board);
+	copyBoard(LL, board);
+
+	if(row>1 && col>1){ //check upper left capture
+		if(board[row-1][col-1] == opp_piece && board[row-2][col-2] == b_square){
+			//imitates the capture move to the dummy board
+			UL[row][col] = b_square;
+			UL[row-1][col-1] = b_square;
+			captureUL = checkCapture(UL, row-2, col-2, opp_piece) + 1;
+		}
+	}
+	if(row>1 && col<6){ //check upper right capture
+		if(board[row-1][col+1] == opp_piece && board[row-2][col+2] == b_square){
+			//imitates the capture move to the dummy board
+			UR[row][col] = b_square;
+			UR[row-1][col+1] = b_square;
+			captureUR = checkCapture(UR, row-2, col+2, opp_piece) + 1;
+		}
+	}
+	if(row<6 && col>1){ //check lower left capture
+		if(board[row+1][col-1] == opp_piece && board[row+2][col-2] == b_square){
+			//imitates the capture move to the dummy board
+			LR[row][col] = b_square;
+			LR[row+1][col-1] = b_square;
+			captureLR = checkCapture(LR, row+2, col-2, opp_piece) + 1;
+		}
+	}
+	if(row<6 && col<6){ //check lower right capture
+		if(board[row+1][col+1] == opp_piece && board[row+2][col+2] == b_square){
+			//imitates the capture move to the dummy board
+			LL[row][col] = b_square;
+			LL[row+1][col+1] = b_square;
+			captureLL = checkCapture(LL, row+2, col+2, opp_piece) + 1;	
+		}
+	}
+	if(captureUL > max) max = captureUL;
+	if(captureUR > max) max = captureUR;
+	if(captureLR > max) max = captureLR;
+	if(captureLL > max) max = captureLL;
+
+	return max;
+}
+void copyBoard(char dest[rows][cols], char src[rows][cols]){
+	for(int i=0; i<rows; i++){
+		for(int j=0; j<cols; j++){
 			dest[i][j] = src[i][j];
 		}
 	}
 }
-void findCursor(char dummy[row][col]){ //changes the style where the cursor is currently
+void findCursor(char dummy[rows][cols]){ //changes the style where the cursor is currently
 	switch(dummy[cur_row][cur_col]){
 			case b_square:
 				dummy[cur_row][cur_col] = 'E';
@@ -117,137 +197,69 @@ void findCursor(char dummy[row][col]){ //changes the style where the cursor is c
 			case p_move:
 				dummy[cur_row][cur_col] = 'P';
 				break;
+			case req_piece:
+				dummy[cur_row][cur_col] = 'R';
+				break;
 			default:
 				printf("\n");
 		}
 }
 int findPossibleMovesP1(){ //checks the possible moves of player 1's marked piece and marks it as 'p' in the map
 	int possible = 0;
-	if(cur_row>=0 && cur_col>0){
-		switch(board[cur_row-1][cur_col-1]){
-			case b_square: //forward move
-				dummy1[cur_row-1][cur_col-1] = p_move;
-				possible = -1;
-				break;
-			case b_piece: //forward capture
-				if(board[cur_row-2][cur_col-2] == b_square){
-					dummy1[cur_row-2][cur_col-2] = p_move;
-					possible = 2;
-				}
-				break;
-			default:
-				break;
+	int row = cur_row;
+	int col = cur_col;
+	if(checkCapture(board, row, col, b_piece) > 0){
+		possible = 1;
+		if(row>1 && col>1){ //check upper left capture
+			if(board[row-1][col-1] == b_piece && board[row-2][col-2] == b_square) dummy1[row-2][col-2] = p_move;
 		}
-		switch(board[cur_row+1][cur_col-1]){ //backward capture
-			case b_piece:
-				if(board[cur_row+2][cur_col-2] == b_square){
-					dummy1[cur_row+2][cur_col-2] = p_move;
-					if(possible = -1) dummy1[cur_row-1][cur_col-1] = 'e';
-					possible = 2;
-				}
-				break;
-			default:
-				break;
+		if(row>1 && col<6){ //check upper right capture
+			if(board[row-1][col+1] == b_piece && board[row-2][col+2] == b_square) dummy1[row-2][col+2] = p_move;
 		}
-	}
-	if(cur_row>=0 && cur_col<7){
-		switch(board[cur_row-1][cur_col+1]){
-			case b_square: //forward move
-				if(possible < 2){
-					dummy1[cur_row-1][cur_col+1] = p_move;
-					if(possible == -1) possible = -3;
-					else possible = -2;
-				}
-				break;
-			case b_piece: //forward capture
-				if(board[cur_row-2][cur_col+2] == b_square) {
-					dummy1[cur_row-2][cur_col+2] = p_move;
-					if(possible = -1) dummy1[cur_row-1][cur_col-1] = 'e';
-					possible = 2;
-				}
-				break;
-			default:
-				break;
+		if(row<6 && col>1){ //check lower left capture
+			if(board[row+1][col-1] == b_piece && board[row+2][col-2] == b_square) dummy1[row+2][col-2] = p_move;
 		}
-		switch(board[cur_row+1][cur_col+1]){ //backward capture
-			case b_piece:
-				if(board[cur_row+2][cur_col+2] == b_square){
-					dummy1[cur_row+2][cur_col+2] = p_move;
-					if(possible = -1) dummy1[cur_row-1][cur_col-1] = 'e';
-					else if(possible = -2) dummy1[cur_row-1][cur_col+1] = 'e';
-					else if(possible = -3) {
-						dummy1[cur_row-1][cur_col-1] = 'e';
-						dummy1[cur_row-1][cur_col+1] = 'e';
-					}
-					possible = 2;
-				}
-			default:
-				break;
+		if(row<6 && col<6){ //check lower right capture
+			if(board[row+1][col+1] == b_piece && board[row+2][col+2] == b_square) dummy1[row+2][col+2] = p_move;
+		}
+	}else{
+		if(row>0 && col>0){ //check forward left move
+			if(board[row-1][col-1] == b_square) dummy1[row-1][col-1] = p_move;
+			possible = 1;
+		}
+		if(row>0 && col<7){ //check forward right move
+			if(board[row-1][col+1] == b_square) dummy1[row-1][col+1] = p_move;
+			possible = 1;
 		}
 	}
 	return possible;
 }
 int findPossibleMovesP2(){ //checks the possible moves of player 2's marked piece and marks it as 'p' in the map
 	int possible = 0;
-	if(cur_row>=0 && cur_col>0){
-		switch(board[cur_row+1][cur_col-1]){
-			case b_square: //forward move
-				dummy1[cur_row+1][cur_col-1] = p_move;
-				possible = -1;
-				break;
-			case w_piece: //forward capture
-				if(board[cur_row+2][cur_col-2] == b_square){
-					dummy1[cur_row+2][cur_col-2] = p_move;
-					possible = 2;
-				}
-				break;
-			default:
-				break;
+	int row = cur_row;
+	int col = cur_col;
+	if(checkCapture(board, row, col, w_piece) > 0){
+		possible = 1;
+		if(row>1 && col>1){ //check upper left capture
+			if(board[row-1][col-1] == w_piece && board[row-2][col-2] == b_square) dummy1[row-2][col-2] = p_move;
 		}
-		switch(board[cur_row-1][cur_col-1]){ //backward capture
-			case w_piece:
-				if(board[cur_row-2][cur_col-2] == b_square){
-					dummy1[cur_row-2][cur_col-2] = p_move;
-					if(possible = -1) dummy1[cur_row+1][cur_col-1] = 'e';
-					possible = 2;
-				}
-				break;
-			default:
-				break;
+		if(row>1 && col<6){ //check upper right capture
+			if(board[row-1][col+1] == w_piece && board[row-2][col+2] == b_square) dummy1[row-2][col+2] = p_move;
 		}
-	}
-	if(cur_row>=0 && cur_col<7){
-		switch(board[cur_row+1][cur_col+1]){
-			case b_square: //forward move
-				if(possible < 2){
-					dummy1[cur_row+1][cur_col+1] = p_move;
-					if(possible == -1) possible = -3;
-					else possible = -2;
-				}
-				break;
-			case w_piece: //forward capture
-				if(board[cur_row+2][cur_col+2] == b_square){
-					dummy1[cur_row+2][cur_col+2] = p_move;
-					if(possible = -1) dummy1[cur_row+1][cur_col-1] = 'e';
-					possible = 2;
-				}
-			default:
-				break;
+		if(row<6 && col>1){ //check lower left capture
+			if(board[row+1][col-1] == w_piece && board[row+2][col-2] == b_square) dummy1[row+2][col-2] = p_move;
 		}
-		switch(board[cur_row-1][cur_col+1]){ //backward capture
-			case w_piece:
-				if(board[cur_row-2][cur_col+2] == b_square){
-					dummy1[cur_row-2][cur_col+2] = p_move;
-					if(possible = -1) dummy1[cur_row+1][cur_col-1] = 'e';
-					else if(possible = -2) dummy1[cur_row+1][cur_col+1] = 'e';
-					else if(possible = -3) {
-						dummy1[cur_row+1][cur_col-1] = 'e';
-						dummy1[cur_row+1][cur_col+1] = 'e';
-					}
-					possible = 2;
-				}
-			default:
-				break;
+		if(row<6 && col<6){ //check lower right capture
+			if(board[row+1][col+1] == w_piece && board[row+2][col+2] == b_square) dummy1[row+2][col+2] = p_move;
+		}
+	}else{
+		if(row<7 && col>0){ //check forward left move
+			if(board[row+1][col-1] == b_square) dummy1[row+1][col-1] = p_move;
+			possible = 1;
+		}
+		if(row<7 && col<7){ //check forward right move
+			if(board[row+1][col+1] == b_square) dummy1[row+1][col+1] = p_move;
+			possible = 1;
 		}
 	}
 	return possible;
@@ -264,8 +276,8 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 						- else, the piece will be unmarked and the player can move again
 					else, nothing will happen
 				*/
-				if(move == p1){ 
-					if(board[cur_row][cur_col] == w_piece){
+				if(move == p1){
+					if((board[cur_row][cur_col] == w_piece && req_flag == 0) || (dummy1[cur_row][cur_col] == 'R' && req_flag == 1)){
 						if(findPossibleMovesP1(cur_row, cur_col) != 0){
 							marked_row = cur_row;
 							marked_col = cur_col;
@@ -280,7 +292,7 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 						}else{}
 					}else{}
 				}else if(move == p2){
-					if(board[cur_row][cur_col] == b_piece){
+					if((board[cur_row][cur_col] == b_piece && req_flag == 0) || (dummy1[cur_row][cur_col] == 'R' && req_flag == 1)){
 						if(findPossibleMovesP2(cur_row, cur_col) != 0){
 							marked_row = cur_row;
 							marked_col = cur_col;
@@ -350,6 +362,7 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 void startGame(){
 	char keypress;
 	do{
+		initializeBoard();
 		printMenu();
 		move = p1;
 		keypress = (char) getchar();
@@ -364,15 +377,23 @@ void startGame(){
 				}
 				cur_col = 0;
 				next_turn = 0;
-				req_flag = 0;
-				findReqMoves(dummy1);
 				do{
 					copyBoard(dummy1, board);
+					findReqMoves(board);
 					findCursor(dummy1);
 					printBoard(dummy1);
 					keypress = (char) getchar();
 					getchar();
 					executeMove(keypress, 0);
+					if(keypress == call_draw){
+						printf("Opponent's answer: ");
+						keypress = (char) getchar();
+						getchar();
+						if(keypress == call_draw){
+							printf("Draw!\n");
+							keypress = resign;
+						}
+					}
 				}while(next_turn == 0 && keypress != resign);
 			}while(keypress != resign);
 		}

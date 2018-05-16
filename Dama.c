@@ -20,6 +20,8 @@
 #define w_piece 'w'
 #define req_piece 'r'
 #define p_move 'p'
+#define w_king 'o'
+#define b_king 'i'
 #define p1 1
 #define p2 2
 
@@ -78,13 +80,15 @@ int main(){
 			move = p1;
 			do{
 				
-				erase(210, 20, 100, 7);
+				erase(210, 20, 100, 14);
 				if(move == p1){
 						cur_row = 7;
-						write_text("Player 1", 210, 20, YELLOW, 0);
+						write_text("Player 1's", 210, 20, YELLOW, 0);
+						write_text("Turn", 210, 30, YELLOW, 0);
 					}else{
 						cur_row = 0;
-						write_text("Player 2", 210, 20, YELLOW, 0);
+						write_text("Player 2's", 210, 20, YELLOW, 0);
+						write_text("Turn", 210, 30, YELLOW, 0);
 					}
 
 					cur_col = 0;
@@ -97,15 +101,16 @@ int main(){
 						keypress = (char) getch();
 						executeMove(keypress, 0);
 						if(keypress == call_draw){
-							erase(210, 20, 100, 7);
+							erase(210, 20, 100, 14);
 							write_text("Draw?", 210, 20, YELLOW, 0);
+							write_text("Press C[Y]", 210, 30, YELLOW, 0);
 							keypress = (char) getch();
 							
 						}
 					}while(next_turn == 0 && !(keypress == resign || keypress == call_draw));
 					gameOver = checkWinner();
 				}while(!(keypress == resign || keypress == call_draw) && gameOver == 0);
-				
+
 				erase(1,1,640,395);
 				if(gameOver == 1)	
 					write_text("Player 1 is the winner", 100, 50, WHITE, 1);
@@ -119,7 +124,7 @@ int main(){
 						write_text("Draw", 135, 50, WHITE, 1);
 					}
 				}
-				write_text("Press any key to continue", 80, 80, WHITE, 0);
+				write_text("Press any key to continue", 50, 80, WHITE, 0);
 				keypress = (char) getch();
 			}
 		}while(keypress!=quit);
@@ -266,19 +271,19 @@ int checkCapture(char board[row][col], int rows, int cols, char opp_piece){ //re
 
 int findPossibleMovesP1(){ //checks the possible moves of player 1's marked piece and marks it as 'p' in the map
 	int possible = 0;
-	if(checkCapture(board, cur_row, cur_col, b_piece) > 0){
+	if(checkCapture(board, cur_row, cur_col, b_piece) > 0 || checkCapture(board, cur_row, cur_col, b_king) > 0){
 		possible = 1;
 		if(cur_row>1 && cur_col>1){ //check upper left capture
-			if(board[cur_row-1][cur_col-1] == b_piece && board[cur_row-2][cur_col-2] == b_square) dummy1[cur_row-2][cur_col-2] = p_move;
+			if((board[cur_row-1][cur_col-1] == b_piece || board[cur_row-1][cur_col-1] == b_king) && board[cur_row-2][cur_col-2] == b_square) dummy1[cur_row-2][cur_col-2] = p_move;
 		}
 		if(cur_row>1 && cur_col<6){ //check upper right capture
-			if(board[cur_row-1][cur_col+1] == b_piece && board[cur_row-2][cur_col+2] == b_square) dummy1[cur_row-2][cur_col+2] = p_move;
+			if((board[cur_row-1][cur_col+1] == b_piece || board[cur_row-1][cur_col+1] == b_king) && board[cur_row-2][cur_col+2] == b_square) dummy1[cur_row-2][cur_col+2] = p_move;
 		}
 		if(cur_row<6 && cur_col>1){ //check lower left capture
-			if(board[cur_row+1][cur_col-1] == b_piece && board[cur_row+2][cur_col-2] == b_square) dummy1[cur_row+2][cur_col-2] = p_move;
+			if((board[cur_row+1][cur_col-1] == b_piece || board[cur_row+1][cur_col-1] == b_king) && board[cur_row+2][cur_col-2] == b_square) dummy1[cur_row+2][cur_col-2] = p_move;
 		}
 		if(cur_row<6 && cur_col<6){ //check lower right capture
-			if(board[cur_row+1][cur_col+1] == b_piece && board[cur_row+2][cur_col+2] == b_square) dummy1[cur_row+2][cur_col+2] = p_move;
+			if((board[cur_row+1][cur_col+1] == b_piece || board[cur_row+1][cur_col+1] == b_king) && board[cur_row+2][cur_col+2] == b_square) dummy1[cur_row+2][cur_col+2] = p_move;
 		}
 	}else{
 		if(cur_row>0 && cur_col>0){ //check forward left move
@@ -289,24 +294,36 @@ int findPossibleMovesP1(){ //checks the possible moves of player 1's marked piec
 			if(board[cur_row-1][cur_col+1] == b_square) dummy1[cur_row-1][cur_col+1] = p_move;
 			possible = 1;
 		}
+		if(board[cur_row][cur_col] == w_king){
+			if(cur_row<7 && cur_col>0){ //check backward left move
+				if(board[cur_row+1][cur_col-1] == b_square) dummy1[cur_row+1][cur_col-1] = p_move;
+				possible = 1;
+			}
+			if(cur_row<7 && cur_col<7){ //check backward right move
+				if(board[cur_row+1][cur_col+1] == b_square) dummy1[cur_row+1][cur_col+1] = p_move;
+				possible = 1;
+			}
+		}
+
+
 	}
 	return possible;
 }
 int findPossibleMovesP2(){ //checks the possible moves of player 2's marked piece and marks it as 'p' in the map
 	int possible = 0;
-	if(checkCapture(board, cur_row, cur_col, w_piece) > 0){
+	if(checkCapture(board, cur_row, cur_col, w_piece) > 0 || checkCapture(board, cur_row, cur_col, w_king) > 0){
 		possible = 1;
 		if(cur_row>1 && cur_col>1){ //check upper left capture
-			if(board[cur_row-1][cur_col-1] == w_piece && board[cur_row-2][cur_col-2] == b_square) dummy1[cur_row-2][cur_col-2] = p_move;
+			if((board[cur_row-1][cur_col-1] == w_piece || board[cur_row-1][cur_col-1] == w_king) && board[cur_row-2][cur_col-2] == b_square) dummy1[cur_row-2][cur_col-2] = p_move;
 		}
 		if(cur_row>1 && cur_col<6){ //check upper right capture
-			if(board[cur_row-1][cur_col+1] == w_piece && board[cur_row-2][cur_col+2] == b_square) dummy1[cur_row-2][cur_col+2] = p_move;
+			if((board[cur_row-1][cur_col+1] == w_piece || board[cur_row-1][cur_col+1] == w_king) && board[cur_row-2][cur_col+2] == b_square) dummy1[cur_row-2][cur_col+2] = p_move;
 		}
 		if(cur_row<6 && cur_col>1){ //check lower left capture
-			if(board[cur_row+1][cur_col-1] == w_piece && board[cur_row+2][cur_col-2] == b_square) dummy1[cur_row+2][cur_col-2] = p_move;
+			if((board[cur_row+1][cur_col-1] == w_piece || board[cur_row+1][cur_col-1] == w_king) && board[cur_row+2][cur_col-2] == b_square) dummy1[cur_row+2][cur_col-2] = p_move;
 		}
 		if(cur_row<6 && cur_col<6){ //check lower right capture
-			if(board[cur_row+1][cur_col+1] == w_piece && board[cur_row+2][cur_col+2] == b_square) dummy1[cur_row+2][cur_col+2] = p_move;
+			if((board[cur_row+1][cur_col+1] == w_piece || board[cur_row+1][cur_col+1] == w_king) && board[cur_row+2][cur_col+2] == b_square) dummy1[cur_row+2][cur_col+2] = p_move;
 		}
 	}else{
 		if(cur_row<7 && cur_col>0){ //check forward left move
@@ -316,6 +333,16 @@ int findPossibleMovesP2(){ //checks the possible moves of player 2's marked piec
 		if(cur_row<7 && cur_col<7){ //check forward right move
 			if(board[cur_row+1][cur_col+1] == b_square) dummy1[cur_row+1][cur_col+1] = p_move;
 			possible = 1;
+		}
+		if(board[cur_row][cur_col] == b_king){
+			if(cur_row>0 && cur_col>0){ //check backward left move
+				if(board[cur_row-1][cur_col-1] == b_square) dummy1[cur_row-1][cur_col-1] = p_move;
+				possible = 1;
+			}
+			if(cur_row>0 && cur_col<7){ //check backward right move
+				if(board[cur_row-1][cur_col+1] == b_square) dummy1[cur_row-1][cur_col+1] = p_move;
+				possible = 1;
+			}
 		}
 	}
 	return possible;
@@ -342,7 +369,7 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 					else, nothing will happen
 				*/
 				if(move == p1){
-					if((board[cur_row][cur_col] == w_piece && req_flag == 0) || (dummy1[cur_row][cur_col] == req_piece && req_flag == 1)){
+					if(((board[cur_row][cur_col] == w_piece || board[cur_row][cur_col] == w_king) && req_flag == 0) || (dummy1[cur_row][cur_col] == req_piece && req_flag == 1)){
 						if(findPossibleMovesP1(cur_row, cur_col) != 0){
 							marked_row = cur_row;
 							marked_col = cur_col;
@@ -358,7 +385,7 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 						}else{}
 					}else{}
 				}else if(move == p2){
-					if((board[cur_row][cur_col] == b_piece && req_flag == 0) || (dummy1[cur_row][cur_col] == req_piece && req_flag == 1)){
+					if(((board[cur_row][cur_col] == b_piece || board[cur_row][cur_col] == b_king) && req_flag == 0) || (dummy1[cur_row][cur_col] == req_piece && req_flag == 1)){
 						if(findPossibleMovesP2(cur_row, cur_col) != 0){
 							marked_row = cur_row;
 							marked_col = cur_col;
@@ -382,24 +409,27 @@ void executeMove(char keypress, int marked){ // executes the move given by the k
 				if(dummy1[cur_row][cur_col] == p_move){
 					if(move == p1){
 						board[cur_row][cur_col] = w_piece;
+						if(cur_row == 0 || board[marked_row][marked_col] == w_king)	board[cur_row][cur_col] = w_king;
 						board[marked_row][marked_col] = b_square;
 						//check if capture is made
 						if(cur_row == (marked_row-2) && cur_col == (marked_col-2)) board[marked_row-1][marked_col-1] = b_square;
 						else if(cur_row == (marked_row-2) && cur_col == (marked_col+2)) board[marked_row-1][marked_col+1] = b_square;
 						else if(cur_row == (marked_row+2) && cur_col == (marked_col-2)) board[marked_row+1][marked_col-1] = b_square;
 						else if(cur_row == (marked_row+2) && cur_col == (marked_col+2)) board[marked_row+1][marked_col+1] = b_square;
-						// setBoardUI();
+						
 						move = p2;
 						next_turn = 1;
+
 					}else{
 						board[cur_row][cur_col] = b_piece;
+						if(cur_row == 7 || board[marked_row][marked_col] == b_king)	board[cur_row][cur_col] = b_king;
 						board[marked_row][marked_col] = b_square;
-						//check if capture is made
+						
 						if(cur_row == (marked_row+2) && cur_col == (marked_col-2)) board[marked_row+1][marked_col-1] = b_square;
 						else if(cur_row == (marked_row+2) && cur_col == (marked_col+2)) board[marked_row+1][marked_col+1] = b_square;
 						else if(cur_row == (marked_row-2) && cur_col == (marked_col-2)) board[marked_row-1][marked_col-1] = b_square;
 						else if(cur_row == (marked_row-2) && cur_col == (marked_col+2)) board[marked_row-1][marked_col+1] = b_square;
-						// setBoardUI();
+						
 						move = p1;
 						next_turn = 1;
 					}
@@ -507,6 +537,14 @@ void redraw(int x, int y, char board[row][col]){ //draws the cell
 	else if(board[x][y]==p_move){
 		drawSquare(xCoordinates[x][y], yCoordinates[x][y], 56);
 		drawCircle(12.5+xCoordinates[x][y], 12.5+yCoordinates[x][y], 25);
+	}else if(board[x][y]==b_king){
+		drawSquare(xCoordinates[x][y], yCoordinates[x][y], 56);
+		drawCircle(12.5+xCoordinates[x][y], 12.5+yCoordinates[x][y], 0);
+		drawCursor(xCoordinates[x][y], yCoordinates[x][y], 15);
+	}else if(board[x][y]==w_king){
+		drawSquare(xCoordinates[x][y], yCoordinates[x][y], 56);
+		drawCircle(12.5+xCoordinates[x][y], 12.5+yCoordinates[x][y], 15);
+		drawCursor(xCoordinates[x][y], yCoordinates[x][y], 0);
 	}
 }
 void setBoardUI(){
@@ -538,14 +576,14 @@ void erase(int x, int y, int w, int h){ //basically covers an area with a black 
 
 void writeMenu(){
 	//writes the menu 
-	write_text("Controls: ", 210, 30, WHITE, 0); 
-	write_text("w - up",220,40,WHITE,0); 
-	write_text("a - left",220,50,WHITE,0);
-	write_text("s - down",220,60,WHITE,0);
-	write_text("d - right",220,70,WHITE,0);   
-	write_text("space- move",220,80,WHITE,0);
-	write_text("r - resign",220,90,WHITE,0);  
-	write_text("c - draw",220,100,WHITE,0); 
+	write_text("Controls: ", 210, 60, WHITE, 0); 
+	write_text("w - up",220,70,WHITE,0); 
+	write_text("a - left",220,80,WHITE,0);
+	write_text("s - down",220,90,WHITE,0);
+	write_text("d - right",220,100,WHITE,0);   
+	write_text("space- move",220,110,WHITE,0);
+	write_text("r - resign",220,120,WHITE,0);  
+	write_text("c - draw",220,130,WHITE,0); 
 }
 header(){
 	write_text("FILIPINO CHECKERS",70,20,WHITE,1); //title
